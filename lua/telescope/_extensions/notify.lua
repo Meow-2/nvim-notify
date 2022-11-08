@@ -1,3 +1,5 @@
+local NotificationBuf = require("notify.service.buffer")
+local util = require("notify.util")
 local pickers = require("telescope.pickers")
 local finders = require("telescope.finders")
 local conf = require("telescope.config").values
@@ -67,33 +69,25 @@ local telescope_notifications = function(opts)
           end
 
           local notification = selection.value
-          local opened_buffer = notify.open(notification)
+          local buf = vim.api.nvim_create_buf(false, true)
+          local notif_buf = NotificationBuf(buf, notification, { config = notify._config() })
+          notif_buf:render()
+
+          local height = notif_buf:height()
+          local width = notif_buf:width()
 
           local lines = vim.opt.lines:get()
           local cols = vim.opt.columns:get()
 
-          local win = vim.api.nvim_open_win(opened_buffer.buffer, true, {
+          util.open_win(notif_buf, true, {
             relative = "editor",
-            row = (lines - opened_buffer.height) / 2,
-            col = (cols - opened_buffer.width) / 2,
-            height = opened_buffer.height,
-            width = opened_buffer.width,
+            row = (lines - height) / 2,
+            col = (cols - width) / 2,
+            height = height,
+            width = width,
             border = "single",
             style = "minimal",
           })
-          -- vim.wo does not behave like setlocal, thus we use setwinvar to set local
-          -- only options. Otherwise our changes would affect subsequently opened
-          -- windows.
-          -- see e.g. neovim#14595
-          vim.fn.setwinvar(
-            win,
-            "&winhl",
-            "Normal:"
-              .. opened_buffer.highlights.body
-              .. ",FloatBorder:"
-              .. opened_buffer.highlights.border
-          )
-          vim.fn.setwinvar(win, "&wrap", 0)
         end)
         return true
       end,
@@ -102,7 +96,12 @@ local telescope_notifications = function(opts)
         define_preview = function(self, entry, status)
           local notification = entry.value
           local max_width = vim.api.nvim_win_get_config(status.preview_win).width
-          notify.open(notification, { buffer = self.state.bufnr, max_width = max_width })
+          local notif_buf = NotificationBuf(
+            self.state.bufnr,
+            notification,
+            { max_width = max_width, config = notify._config() }
+          )
+          notif_buf:render()
         end,
       }),
     })
