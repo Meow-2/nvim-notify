@@ -78,7 +78,7 @@ local telescope_notifications = function(opts)
             col = (cols - opened_buffer.width) / 2,
             height = opened_buffer.height,
             width = opened_buffer.width,
-            border = "rounded",
+            border = "single",
             style = "minimal",
           })
           -- vim.wo does not behave like setlocal, thus we use setwinvar to set local
